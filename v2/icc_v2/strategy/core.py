@@ -116,10 +116,10 @@ def analyze_closed_bars(
     than the next bar. Missing volume is represented as unavailable, never as a
     fabricated neutral value.
     """
-    if not symbol or not _valid_bars(bars_15m, 60) or not _valid_bars(bars_1h, 60) or not _valid_bars(bars_1d, 60):
-        return None
     if stop_buffer_atr < 0 or target_r <= 0:
         raise ValueError("stop buffer must be non-negative and target_r positive")
+    if not symbol or not _valid_bars(bars_15m, 60) or not _valid_bars(bars_1h, 60) or not _valid_bars(bars_1d, 60):
+        return None
 
     trend15, e20, e50, rsi15, volatility = _trend(bars_15m)
     trend1h, _, _, rsi1h, _ = _trend(bars_1h)
