@@ -1,7 +1,22 @@
 """Conservative data-quality validation gates."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from decimal import Decimal
+from typing import Literal
+
+
+@dataclass(frozen=True)
+class QualityIssue:
+    code: str
+    message: str
+    severity: Literal["warning", "reject"]
+
+
+@dataclass(frozen=True)
+class QualityResult:
+    accepted: bool
+    issues: tuple[QualityIssue, ...]
 
 
 def validate_candle(
