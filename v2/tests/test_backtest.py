@@ -45,6 +45,10 @@ class BacktestTests(unittest.TestCase):
         self.assertAlmostEqual(summary["expectancy_r"], 0.25)
         self.assertGreater(summary["max_drawdown_r"], 0)
 
+    def test_rejects_future_bars_that_precede_signal(self):
+        with self.assertRaises(ValueError):
+            simulate_trade(candidate(), [Bar(1, 100, 101, 99, 100)])
+
     def test_rejects_invalid_costs(self):
         with self.assertRaises(ValueError):
             simulate_trade(candidate(), [Bar(2, 100, 101, 99, 100)], fee_bps_per_side=-1)
