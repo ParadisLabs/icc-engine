@@ -46,7 +46,7 @@ class BinanceSpotUniverseScanner:
         if max_symbols < 1:
             raise ValueError("max_symbols must be positive")
         self.adapter = adapter or BinancePublicSpot()
-        self.quote_assets = {x.upper() for x in (quote_assets or {"USDT", "USDC"})}
+        self.quote_assets = {x.upper() for x in ({"USDT", "USDC"} if quote_assets is None else quote_assets)}
         if not self.quote_assets:
             raise ValueError("at least one quote asset is required")
         self.max_symbols = max_symbols
