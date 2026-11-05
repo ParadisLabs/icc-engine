@@ -75,3 +75,19 @@ The adapter uses Python's standard library and has no mandatory third-party depe
 ## Fincept relationship
 
 Fincept is an integration reference and possible connector host, not a required runtime dependency. ICC V2 owns its normalized contracts and can consume Fincept-provided data where the source, timestamp, licence and data semantics are known. Do not copy Fincept source code into this repository without resolving its licensing terms.
+
+
+## Added V2 strategy and futures work
+
+The current V2 branch now also includes:
+- A public Binance USD-M perpetual adapter for active perpetual discovery, klines, aggregate trades and depth snapshots. Klines preserve exchange-reported base volume, quote volume, trade count and taker-buy volume fields.
+- A rebuilt trend/sweep setup hypothesis using normalized closed bars, 15m signal conditions and 1h/daily confirmation. Actual relative volume is scored only when present; missing volume is never replaced with a fabricated neutral value.
+- Conservative OHLC backtest primitives: next-bar-open entry, stop-first treatment when stop and target are both touched in one candle, explicit fee/slippage assumptions, MFE/MAE and expectancy/drawdown summaries.
+
+These are research components only. A full FX adapter, live WebSocket transport, cross-asset universe scanner, durable V2 memory and walk-forward portfolio evaluation remain outstanding. FX spot has no single consolidated exchange order book; any broker tick volume or futures volume must be identified by source and market type.
+
+The V2 test suite runs with:
+
+```bash
+PYTHONPATH=v2 python -m unittest discover -s v2/tests -v
+```
