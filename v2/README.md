@@ -142,3 +142,10 @@ The current isolated feature-branch test suite passes 46 tests. This is software
 ### Spot and perpetual universe discovery
 
 The liquidity shortlist now has separate Binance Spot and USD-M perpetual scanners. Each uses one instrument-metadata request and one all-symbol 24-hour ticker snapshot, preserves the market type, and ranks only within its own venue/market-type dataset. Quote turnover from Spot and perpetual markets must not be added together or treated as interchangeable.
+
+
+### Initial portfolio risk simulation
+
+A portfolio-level research simulator now admits candidate paths chronologically and enforces configurable per-trade risk, aggregate open-risk, maximum concurrent positions, UTC-day realized-loss and peak-to-equity drawdown limits. It applies the existing conservative per-trade OHLC simulator and reports realized equity and rejection reasons.
+
+This remains a simplified portfolio model. It does not yet model instrument-specific margin, funding, liquidation, partial fills, spread/market impact, cross-asset correlation, or intrabar mark-to-market portfolio risk. Do not use its results as a live risk engine.
