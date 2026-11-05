@@ -85,6 +85,7 @@ def simulate_portfolio(
     max_drawdown = 0.0
     active: list[PortfolioTrade] = []
     accepted: list[PortfolioTrade] = []
+    closed_trades: list[PortfolioTrade] = []
     rejected: dict[str, int] = {}
     daily_start_equity: dict[int, float] = {}
     daily_realized_pnl: dict[int, float] = {}
@@ -104,11 +105,10 @@ def simulate_portfolio(
             if peak > 0:
                 max_drawdown = max(max_drawdown, (peak - equity) / peak * 100.0)
             active.remove(trade)
-            index = accepted.index(trade)
-            accepted[index] = PortfolioTrade(
+            closed_trades.append(PortfolioTrade(
                 outcome=trade.outcome, risk_amount=trade.risk_amount,
                 pnl=trade.pnl, equity_after_exit=equity,
-            )
+            ))
 
     for outcome in simulated:
         close_until(outcome.entry_time_ms)
@@ -141,5 +141,5 @@ def simulate_portfolio(
     return PortfolioReport(
         initial_equity=float(initial_equity), final_equity=equity,
         total_return_pct=total_return, max_drawdown_pct=max_drawdown,
-        accepted_trades=tuple(accepted), rejected_by_reason=rejected,
+        accepted_trades=tuple(sorted(closed_trades, key=lambda item: (item.outcome.entry_time_ms, item.outcome.symbol))), rejected_by_reason=rejected,
     )
