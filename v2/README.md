@@ -103,3 +103,16 @@ The current V2 development work also includes:
 The isolated feature-branch suite currently passes 39 tests. This is unit-test validation only: it does not establish profitability, validate a live exchange session, or prove feed availability under sustained load.
 
 Still outstanding: a true cross-asset setup ranker, FX provider adapter with source-specific volume semantics, walk-forward portfolio evaluation, durable market-event ingestion/retention policy, and a demo-only execution adapter with risk controls and explicit human authorization.
+
+
+### FX data semantics and practice adapter
+
+A read-only OANDA practice candle adapter is now available in `icc_v2.data.oanda_fx`. It requires an OANDA practice API token supplied at runtime and is hard-restricted to the practice REST host. It requests instrument candles only; it does not access accounts, orders, positions or live endpoints.
+
+OANDA's candle `volume` field represents the **number of prices created during the candle**, so ICC records it as `price_update_count` with `volume_kind="broker_price_update_count"`. It is not exchange-traded volume and must not be combined with Binance base/quote volume or futures contract volume. See the [OANDA candle API schema](https://github.com/oanda/v20-openapi/blob/master/yaml/separate/v20_instrument.yaml) and [OANDA authentication documentation](https://developer.oanda.com/rest-live-v20/authentication/).
+
+### Walk-forward evaluation
+
+The initial chronological walk-forward evaluator separates earlier candidate outcomes from later test blocks and admits training outcomes only when their simulated exits precede the first test signal. It reports training/test outcome metrics by fold. It is a setup-level evaluation utility, **not yet a portfolio simulator**: overlapping positions, capital allocation, cross-asset correlation, margin, and shared risk limits remain to be implemented.
+
+The current isolated feature-branch test suite passes 46 tests. This is software validation only, not a profitability claim or a substitute for a sustained live-feed soak test.
