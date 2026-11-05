@@ -30,6 +30,8 @@ class BinanceSpotWebSocket:
         self.symbols = sorted({self._symbol(s) for s in symbols})
         if not self.symbols:
             raise ValueError("at least one symbol is required")
+        if len(self.symbols) > 512:
+            raise ValueError("combined stream supports at most 512 symbols (two streams each)")
         if max_buffered_depth_events < 10:
             raise ValueError("buffer limit must be at least 10")
         self.rest = rest or BinancePublicSpot()
@@ -110,6 +112,10 @@ class BinanceSpotWebSocket:
             try:
                 book.bootstrap(snapshots[symbol], list(buffers[symbol]))
             except DepthSyncError:
+                # A snapshot that cannot be bridged is stale for this buffered window.
+                # Fetch a fresh snapshot on the next depth event rather than retrying
+                # forever against the same update ID.
+                snapshots[symbol] = None
                 return None
             buffers[symbol].clear()
         else:
