@@ -6,7 +6,7 @@ on:
       - 'v2/**'
       - '.github/workflows/icc-v2-tests.yml'
   push:
-    branches: [main, v2-foundation]
+    branches: [main, v2-foundation, 'feat/**']
     paths:
       - 'v2/**'
       - '.github/workflows/icc-v2-tests.yml'
