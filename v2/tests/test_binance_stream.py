@@ -1,5 +1,6 @@
 import json
 import unittest
+from collections import deque
 from decimal import Decimal
 
 from icc_v2.data.binance_stream import BinanceSpotWebSocket
@@ -57,7 +58,7 @@ class BinanceSpotStreamTests(unittest.TestCase):
             ["BTCUSDT"], rest=rest, socket_factory=lambda _: sock, clock_ms=lambda: 1200
         )
         events = []
-        count = client.run_once(events.append)
+        count = client.run_once(events.append, max_messages=3)
         self.assertEqual(count, 3)
         self.assertTrue(sock.closed)
         self.assertEqual(rest.calls, 1)
@@ -65,11 +66,11 @@ class BinanceSpotStreamTests(unittest.TestCase):
         self.assertEqual(events[0].payload["aggressor_side"], "buy")
         self.assertEqual(events[1].payload["last_update_id"], 101)
         self.assertEqual(events[1].payload["bids"][0], ["99", "4"])
-        self.assertFalse(client.books["btcusdt"].synchronized)  # session close invalidates state
+        self.assertFalse(client.books["btcusdt"].synchronized)
 
     def test_trade_aggressor_side_respects_buyer_is_maker_flag(self):
         client = BinanceSpotWebSocket(["ETHUSDT"], rest=FakeRest(), socket_factory=lambda _: None)
-        buffers = {"ethusdt": __import__("collections").deque()}
+        buffers = {"ethusdt": deque()}
         snapshots = {"ethusdt": None}
         event = client._handle({
             "e": "trade", "s": "ETHUSDT", "t": 1, "T": 1000,
