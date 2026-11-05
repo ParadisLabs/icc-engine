@@ -78,6 +78,44 @@ class BinanceSpotStreamTests(unittest.TestCase):
         }, 1100, buffers, snapshots)
         self.assertEqual(event.payload["aggressor_side"], "sell")
 
+
+    def test_unbridgeable_snapshot_is_refetched(self):
+        class ChangingRest:
+            def __init__(self):
+                self.ids = [100, 101]
+                self.calls = 0
+
+            def order_book(self, symbol, limit=1000):
+                self.calls += 1
+                snap = type("Snapshot", (), {
+                    "last_update_id": self.ids.pop(0),
+                    "bids": FakeSnapshot.bids,
+                    "asks": FakeSnapshot.asks,
+                })()
+                return snap
+
+        rest = ChangingRest()
+        client = BinanceSpotWebSocket(["BTCUSDT"], rest=rest, socket_factory=lambda _: None)
+        buffers = {"btcusdt": deque()}
+        snapshots = {"btcusdt": None}
+        first = client._handle({
+            "e": "depthUpdate", "s": "BTCUSDT", "E": 1000,
+            "U": 103, "u": 103, "b": [], "a": [],
+        }, 1100, buffers, snapshots)
+        self.assertIsNone(first)
+        self.assertIsNone(snapshots["btcusdt"])
+        second = client._handle({
+            "e": "depthUpdate", "s": "BTCUSDT", "E": 1100,
+            "U": 102, "u": 103, "b": [["99", "4"]], "a": [],
+        }, 1200, buffers, snapshots)
+        self.assertIsNotNone(second)
+        self.assertEqual(rest.calls, 2)
+        self.assertTrue(second.payload["synchronized"])
+
+    def test_combined_stream_symbol_limit_is_enforced(self):
+        with self.assertRaises(ValueError):
+            BinanceSpotWebSocket([f"SYM{i}" for i in range(513)])
+
     def test_invalid_symbols_and_empty_universe_are_rejected(self):
         with self.assertRaises(ValueError):
             BinanceSpotWebSocket([])
