@@ -1,4 +1,5 @@
 import unittest
+from decimal import Decimal
 from unittest.mock import patch
 
 from icc_v2.data.binance_usdm import BinanceUsdmPublic
@@ -27,8 +28,8 @@ class BinanceUsdmTests(unittest.TestCase):
         candle = self.adapter.klines("btcusdt", "1m", limit=1)[0]
         self.assertEqual(candle.base_volume, 3.5)
         self.assertEqual(candle.quote_volume, 38.5)
-        self.assertEqual(candle.taker_buy_base_volume, 2.1)
-        self.assertEqual(candle.taker_buy_quote_volume, 23.1)
+        self.assertEqual(candle.taker_buy_base_volume, Decimal("2.1"))
+        self.assertEqual(candle.taker_buy_quote_volume, Decimal("23.1"))
         self.assertEqual(candle.market_type, "perpetual")
 
     @patch("icc_v2.data.binance_usdm.urlopen")
