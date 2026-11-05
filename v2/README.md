@@ -91,3 +91,15 @@ The V2 test suite runs with:
 ```bash
 PYTHONPATH=v2 python -m unittest discover -s v2/tests -v
 ```
+
+
+## Additional implementation status (development branch)
+
+The current V2 development work also includes:
+- Read-only Binance Spot WebSocket ingestion for public trades and diff-depth updates, with REST snapshot bootstrap, sequence-aware local books, trade deduplication, reconnect backoff, bounded depth buffering and resnapshot recovery. The stream consumer is optional and requires `websocket-client` at runtime.
+- A bounded Spot universe shortlist using one exchange metadata request and one all-symbol 24-hour ticker snapshot. It filters active pairs by quote asset, excludes stablecoin/leveraged-token base assets, applies a minimum reported quote-turnover threshold, and caps the shortlist. This is a liquidity shortlist, **not** an ICC signal ranking.
+- SQLite-backed setup memory with idempotent candidate recording, immutable finalized outcomes, persistence across process restarts and grouped expectancy/win-rate summaries. This stores evidence; it does not yet automatically tune strategy parameters.
+
+The isolated feature-branch suite currently passes 39 tests. This is unit-test validation only: it does not establish profitability, validate a live exchange session, or prove feed availability under sustained load.
+
+Still outstanding: a true cross-asset setup ranker, FX provider adapter with source-specific volume semantics, walk-forward portfolio evaluation, durable market-event ingestion/retention policy, and a demo-only execution adapter with risk controls and explicit human authorization.
