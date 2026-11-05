@@ -47,11 +47,15 @@ def simulate_trade(
         raise ValueError("fees and slippage cannot be negative")
     if not future_bars:
         return None
-    if any(not all(isfinite(x) and x > 0 for x in (b.open, b.high, b.low, b.close))
-           or b.high < max(b.open, b.close, b.low)
-           or b.low > min(b.open, b.close, b.high)
-           for b in future_bars):
-        raise ValueError("future bars contain invalid OHLC data")
+    previous_time = candidate.signal_time_ms
+    for bar in future_bars:
+        if bar.timestamp_ms <= previous_time:
+            raise ValueError("future bars must be strictly later than the signal bar")
+        if (not all(isfinite(x) and x > 0 for x in (bar.open, bar.high, bar.low, bar.close))
+                or bar.high < max(bar.open, bar.close, bar.low)
+                or bar.low > min(bar.open, bar.close, bar.high)):
+            raise ValueError("future bars contain invalid OHLC data")
+        previous_time = bar.timestamp_ms
 
     entry_bar = future_bars[0]
     entry = entry_bar.open
