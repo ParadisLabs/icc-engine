@@ -91,3 +91,25 @@ The V2 test suite runs with:
 ```bash
 PYTHONPATH=v2 python -m unittest discover -s v2/tests -v
 ```
+
+
+## Binance Spot live stream transport
+
+`icc_v2.data.binance_stream.BinanceSpotWebSocket` adds a read-only combined
+trade and diff-depth stream consumer. Install the optional runtime dependency
+with `pip install websocket-client`. The stream uses public endpoints only.
+
+- Subscribes to trade and 100 ms diff-depth streams for an explicit symbol list.
+- Deduplicates public trades by exchange trade ID and preserves the buyer-is-maker
+  flag plus the corresponding aggressor-side interpretation.
+- Buffers depth events and bridges them to a REST snapshot using the existing
+  sequence-aware book reconstruction primitive.
+- Emits depth only after the local book is synchronized. Sequence gaps invalidate
+  the book and propagate an error so the caller reconnects and resnapshots.
+- Bounds the bootstrap buffer and uses bounded exponential reconnect backoff.
+
+This is an initial transport component, not yet a continuously running service,
+persistent event store, or multi-venue feed manager. A socket session ending
+invalidates its local books; consumers must treat the next session as a fresh
+bootstrap. The event callback must persist or forward events if retention is
+required. WebSocket transport tests use injected sockets and REST snapshots.
