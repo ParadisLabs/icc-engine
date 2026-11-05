@@ -58,7 +58,7 @@ This first adapter is intentionally a **REST snapshot adapter**. It is not yet a
 From the repository root:
 
 ```bash
-python -m unittest discover -s v2/tests -v
+PYTHONPATH=v2 python -m unittest discover -s v2/tests -v
 ```
 
 The adapter uses Python's standard library and has no mandatory third-party dependency.
@@ -66,7 +66,7 @@ The adapter uses Python's standard library and has no mandatory third-party depe
 ## Planned next steps
 
 1. Add unit tests for response parsing, retries, rate-limit handling and invalid symbols.
-2. Add a Binance WebSocket market stream with reconnect, ping/pong, trade deduplication and depth sequence-gap detection.
+2. Add the WebSocket transport loop with reconnect, ping/pong, trade deduplication and automatic resnapshot on depth sequence gaps. The pure depth-book reconstruction primitive is now in place.
 3. Add a normalized event store and data-quality monitoring.
 4. Add instrument discovery across multiple exchanges, with per-venue capability metadata.
 5. Build historical setup evaluation before enabling any demo execution.
