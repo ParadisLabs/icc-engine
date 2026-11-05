@@ -42,7 +42,7 @@ class CoreStrategyTests(unittest.TestCase):
         self.assertIsNotNone(candidate)
         self.assertEqual(candidate.side, "LONG")
         self.assertGreater(candidate.take_profit, candidate.reference_price)
-        self.assertEqual(candidate.features["volume_ratio"], candidate.features["volume_ratio"])
+        self.assertGreater(candidate.features["volume_ratio"], 1.0)
 
     def test_flat_market_does_not_generate_candidate(self):
         flat = make_bars(100, 60, 0.0)
