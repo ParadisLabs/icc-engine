@@ -137,3 +137,8 @@ OANDA's candle `volume` field represents the **number of prices created during t
 The initial chronological walk-forward evaluator separates earlier candidate outcomes from later test blocks and admits training outcomes only when their simulated exits precede the first test signal. It reports training/test outcome metrics by fold. It is a setup-level evaluation utility, **not yet a portfolio simulator**: overlapping positions, capital allocation, cross-asset correlation, margin, and shared risk limits remain to be implemented.
 
 The current isolated feature-branch test suite passes 46 tests. This is software validation only, not a profitability claim or a substitute for a sustained live-feed soak test.
+
+
+### Spot and perpetual universe discovery
+
+The liquidity shortlist now has separate Binance Spot and USD-M perpetual scanners. Each uses one instrument-metadata request and one all-symbol 24-hour ticker snapshot, preserves the market type, and ranks only within its own venue/market-type dataset. Quote turnover from Spot and perpetual markets must not be added together or treated as interchangeable.
