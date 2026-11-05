@@ -1,0 +1,77 @@
+# ICC V2 — Multi-Asset Intelligence Engine
+
+ICC V2 is being developed alongside the existing ICC engine, not as a replacement commit. The current engine remains untouched while V2 establishes a new data contract, provider adapters, feature pipeline, strategy evaluation, historical memory, and demo execution boundary.
+
+## Initial architecture
+
+```text
+Market venues / licensed providers
+        |
+Provider adapters (venue-specific)
+        |
+Normalized market-data contracts
+        |
+Quality checks + timestamp alignment
+        |
+Feature and market-flow calculations
+        |
+ICC setup hypotheses + historical validation
+        |
+Opportunity ranking + portfolio-level constraints
+        |
+Demo execution adapter
+        |
+Immutable event ledger + performance analysis
+```
+
+## First adapter: Binance public Spot REST
+
+`icc_v2.data.binance_public.BinancePublicSpot` is the first integration spike. It uses public market endpoints only and does not accept API keys or submit orders. It exposes:
+
+- exchange instrument metadata and trading status;
+- 24-hour ticker statistics;
+- OHLCV candles with actual exchange-reported base-asset volume and quote-asset volume;
+- recent public trades;
+- current order-book snapshots.
+
+This first adapter is intentionally a **REST snapshot adapter**. It is not yet a streaming order-flow engine. A current depth snapshot cannot reconstruct historical depth changes, and REST polling must not be presented as continuous order flow. A later WebSocket adapter must maintain sequence-aware local books and capture trade events without gaps.
+
+## Data semantics
+
+- Every record carries venue, market type, instrument, event time and receive time where applicable.
+- Candle `volume` is base-asset volume; `quote_volume` is quote-asset volume.
+- Public trades preserve exchange trade ID, price, quantity, quote quantity, timestamp and buyer-is-maker flag. Aggressor-side interpretation must be documented and tested before use.
+- Order-book snapshots are point-in-time bid/ask levels, not a consolidated market book.
+- No synthetic volume, candle-range weighting or inferred global forex order book is allowed to masquerade as exchange-observed flow.
+- Provider failures, rate limits, malformed payloads and stale data must fail visibly; no silent substitution.
+
+## Scope and safety
+
+- Initial adapter: Binance Spot public data only.
+- No private account access, order placement, leverage changes or live trading.
+- No broker/prop-firm credentials in this package.
+- Future execution begins against an explicitly configured demo environment, with platform rules, a kill switch and a complete order/fill ledger.
+- Crypto, FX, futures, equities and CFDs require separate market metadata and source-quality policies. They must not be treated as interchangeable.
+
+## Run the adapter
+
+From the repository root:
+
+```bash
+python -m unittest discover -s v2/tests -v
+```
+
+The adapter uses Python's standard library and has no mandatory third-party dependency.
+
+## Planned next steps
+
+1. Add unit tests for response parsing, retries, rate-limit handling and invalid symbols.
+2. Add a Binance WebSocket market stream with reconnect, ping/pong, trade deduplication and depth sequence-gap detection.
+3. Add a normalized event store and data-quality monitoring.
+4. Add instrument discovery across multiple exchanges, with per-venue capability metadata.
+5. Build historical setup evaluation before enabling any demo execution.
+6. Connect the demo execution adapter only after the selected prop firm's trial API and rules are verified.
+
+## Fincept relationship
+
+Fincept is an integration reference and possible connector host, not a required runtime dependency. ICC V2 owns its normalized contracts and can consume Fincept-provided data where the source, timestamp, licence and data semantics are known. Do not copy Fincept source code into this repository without resolving its licensing terms.
