@@ -5,17 +5,20 @@ from icc_v2.strategy.walk_forward import CandidatePath
 from icc_v2.strategy.portfolio import simulate_portfolio
 
 
-def path(index, *, stop_hit=False, delayed=False):
-    signal_time = index * 1000
+def path(index, *, stop_hit=False, delayed=False, signal_step=1000):
+    signal_time = index * signal_step
     candidate = SetupCandidate(
         symbol=f"COIN{index}", side="LONG", signal_time_ms=signal_time,
         reference_price=100.0, stop_loss=98.0, take_profit=102.0,
         risk_per_unit=2.0, score=70.0, features={},
     )
-    if stop_hit:
-        bar = Bar(signal_time + (2000 if delayed else 1), 100.0, 101.0, 97.0, 97.5)
-    else:
-        bar = Bar(signal_time + (2000 if delayed else 1), 100.0, 103.0, 99.0, 102.5)
+    if delayed:
+        first = Bar(signal_time + 1, 100.0, 101.0, 99.0, 100.0)
+        second = (Bar(signal_time + 2000, 100.0, 101.0, 97.0, 97.5) if stop_hit
+                  else Bar(signal_time + 2000, 100.0, 103.0, 99.0, 102.5))
+        return CandidatePath(candidate, (first, second))
+    bar = (Bar(signal_time + 1, 100.0, 101.0, 97.0, 97.5) if stop_hit
+           else Bar(signal_time + 1, 100.0, 103.0, 99.0, 102.5))
     return CandidatePath(candidate, (bar,))
 
 
@@ -40,7 +43,7 @@ class PortfolioSimulationTests(unittest.TestCase):
 
     def test_daily_loss_limit_blocks_later_entries_after_realized_loss(self):
         report = simulate_portfolio(
-            [path(0, stop_hit=True, delayed=True), path(3)],
+            [path(0, stop_hit=True, delayed=True, signal_step=3000), path(1, signal_step=3000)],
             **self.limits(max_daily_loss_pct=0.5, max_open_risk_pct=2.0),
         )
         self.assertEqual(len(report.accepted_trades), 1)
@@ -49,7 +52,7 @@ class PortfolioSimulationTests(unittest.TestCase):
 
     def test_max_open_positions_is_enforced(self):
         report = simulate_portfolio(
-            [path(0, delayed=True), path(1, delayed=True), path(2, delayed=True)],
+            [path(0, delayed=True, signal_step=500), path(1, delayed=True, signal_step=500), path(2, delayed=True, signal_step=500)],
             **self.limits(max_open_positions=1, max_open_risk_pct=3.0),
         )
         self.assertEqual(len(report.accepted_trades), 1)
