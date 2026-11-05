@@ -1,7 +1,7 @@
 import unittest
 from decimal import Decimal
 
-from icc_v2.data.universe import BinanceSpotUniverseScanner
+from icc_v2.data.universe import BinanceSpotUniverseScanner, BinanceUsdmUniverseScanner
 
 
 class FakeAdapter:
@@ -63,6 +63,47 @@ class UniverseScannerTests(unittest.TestCase):
     def test_caps_universe_size(self):
         scanner = BinanceSpotUniverseScanner(FakeAdapter(), max_symbols=1, min_quote_volume="0")
         self.assertEqual(len(scanner.scan()), 1)
+
+
+
+class FakeFuturesAdapter:
+    def __init__(self):
+        self.metadata_calls = 0
+        self.ticker_calls = 0
+
+    def exchange_info(self, *, quote_assets=None):
+        self.metadata_calls += 1
+        return [
+            {"symbol": "BTCUSDT", "baseAsset": "BTC", "quoteAsset": "USDT"},
+            {"symbol": "ETHUSDT", "baseAsset": "ETH", "quoteAsset": "USDT"},
+            {"symbol": "USDCUSDT", "baseAsset": "USDC", "quoteAsset": "USDT"},
+        ]
+
+    def tickers_24h(self):
+        self.ticker_calls += 1
+        def row(symbol, quote_volume):
+            return {
+                "symbol": symbol, "last_price": Decimal("10"),
+                "base_volume_24h": Decimal("100"),
+                "quote_volume_24h": Decimal(str(quote_volume)),
+                "trade_count_24h": 10,
+                "price_change_percent_24h": Decimal("1"),
+            }
+        return [row("BTCUSDT", 100000000), row("ETHUSDT", 150000000), row("USDCUSDT", 999999999)]
+
+
+class UsdmUniverseScannerTests(unittest.TestCase):
+    def test_ranks_perpetuals_separately_and_uses_one_ticker_snapshot(self):
+        adapter = FakeFuturesAdapter()
+        results = BinanceUsdmUniverseScanner(adapter, max_symbols=1, min_quote_volume="1000000").scan()
+        self.assertEqual([x.symbol for x in results], ["ETHUSDT"])
+        self.assertEqual(results[0].market_type, "perpetual")
+        self.assertEqual(adapter.metadata_calls, 1)
+        self.assertEqual(adapter.ticker_calls, 1)
+
+    def test_empty_quote_filter_is_rejected(self):
+        with self.assertRaises(ValueError):
+            BinanceUsdmUniverseScanner(quote_assets=set())
 
 
 if __name__ == "__main__":
