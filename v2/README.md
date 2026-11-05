@@ -113,3 +113,27 @@ persistent event store, or multi-venue feed manager. A socket session ending
 invalidates its local books; consumers must treat the next session as a fresh
 bootstrap. The event callback must persist or forward events if retention is
 required. WebSocket transport tests use injected sockets and REST snapshots.
+
+## Additional implementation status (development branch)
+
+The current V2 development work also includes:
+- Read-only Binance Spot WebSocket ingestion for public trades and diff-depth updates, with REST snapshot bootstrap, sequence-aware local books, trade deduplication, reconnect backoff, bounded depth buffering and resnapshot recovery. The stream consumer is optional and requires `websocket-client` at runtime.
+- A bounded Spot universe shortlist using one exchange metadata request and one all-symbol 24-hour ticker snapshot. It filters active pairs by quote asset, excludes stablecoin/leveraged-token base assets, applies a minimum reported quote-turnover threshold, and caps the shortlist. This is a liquidity shortlist, **not** an ICC signal ranking.
+- SQLite-backed setup memory with idempotent candidate recording, immutable finalized outcomes, persistence across process restarts and grouped expectancy/win-rate summaries. This stores evidence; it does not yet automatically tune strategy parameters.
+
+The isolated feature-branch suite currently passes 39 tests. This is unit-test validation only: it does not establish profitability, validate a live exchange session, or prove feed availability under sustained load.
+
+Still outstanding: a true cross-asset setup ranker, FX provider adapter with source-specific volume semantics, walk-forward portfolio evaluation, durable market-event ingestion/retention policy, and a demo-only execution adapter with risk controls and explicit human authorization.
+
+
+### FX data semantics and practice adapter
+
+A read-only OANDA practice candle adapter is now available in `icc_v2.data.oanda_fx`. It requires an OANDA practice API token supplied at runtime and is hard-restricted to the practice REST host. It requests instrument candles only; it does not access accounts, orders, positions or live endpoints.
+
+OANDA's candle `volume` field represents the **number of prices created during the candle**, so ICC records it as `price_update_count` with `volume_kind="broker_price_update_count"`. It is not exchange-traded volume and must not be combined with Binance base/quote volume or futures contract volume. See the [OANDA candle API schema](https://github.com/oanda/v20-openapi/blob/master/yaml/separate/v20_instrument.yaml) and [OANDA authentication documentation](https://developer.oanda.com/rest-live-v20/authentication/).
+
+### Walk-forward evaluation
+
+The initial chronological walk-forward evaluator separates earlier candidate outcomes from later test blocks and admits training outcomes only when their simulated exits precede the first test signal. It reports training/test outcome metrics by fold. It is a setup-level evaluation utility, **not yet a portfolio simulator**: overlapping positions, capital allocation, cross-asset correlation, margin, and shared risk limits remain to be implemented.
+
+The current isolated feature-branch test suite passes 46 tests. This is software validation only, not a profitability claim or a substitute for a sustained live-feed soak test.
