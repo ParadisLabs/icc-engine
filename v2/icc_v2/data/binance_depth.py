@@ -48,7 +48,7 @@ class BinanceSpotDepthBook:
         self.synchronized = False
 
     @staticmethod
-    def _parse_side(rows: Iterable[list[Any]]) -> dict[Decimal, Decimal]:
+    def _parse_side(rows: Iterable[list[Any]], *, keep_zero: bool = False) -> dict[Decimal, Decimal]:
         side: dict[Decimal, Decimal] = {}
         for row in rows:
             if not isinstance(row, (list, tuple)) or len(row) != 2:
@@ -56,7 +56,7 @@ class BinanceSpotDepthBook:
             price, quantity = _d(row[0]), _d(row[1])
             if price <= 0:
                 raise DepthSyncError("Depth price must be positive")
-            if quantity > 0:
+            if quantity > 0 or keep_zero:
                 side[price] = quantity
         return side
 
@@ -106,8 +106,8 @@ class BinanceSpotDepthBook:
             raise DepthSyncError("Book is not synchronized")
         try:
             first_id, final_id = int(event["U"]), int(event["u"])
-            bids = self._parse_side(event.get("b", []))
-            asks = self._parse_side(event.get("a", []))
+            bids = self._parse_side(event.get("b", []), keep_zero=True)
+            asks = self._parse_side(event.get("a", []), keep_zero=True)
         except (KeyError, TypeError, ValueError) as exc:
             self.invalidate()
             raise DepthSyncError("Malformed depth update") from exc
