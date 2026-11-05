@@ -173,15 +173,14 @@ class BinancePublicSpot:
             result.append(item)
         return result
 
-    def ticker_24h(self, symbol: str) -> dict[str, Any]:
-        """Return 24-hour statistics; this is not a trade-by-trade feed."""
-        payload = self._get("/api/v3/ticker/24hr", {"symbol": self._symbol(symbol)})
-        if not isinstance(payload, dict):
-            raise MarketDataError("Unexpected 24-hour ticker response")
+    @staticmethod
+    def _normalize_ticker(payload: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(payload, dict) or not payload.get("symbol"):
+            raise MarketDataError("Malformed 24-hour ticker row")
         return {
-            "venue": self.venue,
-            "market_type": self.market_type,
-            "symbol": payload.get("symbol"),
+            "venue": "binance",
+            "market_type": "spot",
+            "symbol": str(payload["symbol"]).upper(),
             "event_time_ms": int(payload["closeTime"]) if "closeTime" in payload else None,
             "last_price": _decimal(payload["lastPrice"], "lastPrice"),
             "base_volume_24h": _decimal(payload["volume"], "volume"),
@@ -189,6 +188,18 @@ class BinancePublicSpot:
             "trade_count_24h": int(payload["count"]),
             "price_change_percent_24h": _decimal(payload["priceChangePercent"], "priceChangePercent"),
         }
+
+    def ticker_24h(self, symbol: str) -> dict[str, Any]:
+        """Return one symbol's 24-hour statistics; not a trade-by-trade feed."""
+        payload = self._get("/api/v3/ticker/24hr", {"symbol": self._symbol(symbol)})
+        return self._normalize_ticker(payload)
+
+    def tickers_24h(self) -> list[dict[str, Any]]:
+        """Return the venue's 24-hour ticker snapshot in one bounded REST request."""
+        payload = self._get("/api/v3/ticker/24hr")
+        if not isinstance(payload, list):
+            raise MarketDataError("Unexpected all-symbol 24-hour ticker response")
+        return [self._normalize_ticker(row) for row in payload]
 
     def klines(self, symbol: str, interval: str = "1m", *, limit: int = 500) -> list[Candle]:
         """Return candles with exchange-reported base and quote volume."""
