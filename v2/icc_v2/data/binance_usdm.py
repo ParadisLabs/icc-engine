@@ -128,6 +128,28 @@ class BinanceUsdmPublic:
             and (quotes is None or row.get("quoteAsset") in quotes)
         ]
 
+    def tickers_24h(self) -> list[dict[str, Any]]:
+        """Return all USD-M perpetual 24-hour ticker rows in one bounded request."""
+        rows = self._get("/fapi/v1/ticker/24hr")
+        if not isinstance(rows, list):
+            raise FuturesMarketDataError("Unexpected all-symbol Futures ticker response")
+        result = []
+        for row in rows:
+            if not isinstance(row, dict) or not row.get("symbol"):
+                raise FuturesMarketDataError("Malformed Futures 24-hour ticker row")
+            result.append({
+                "venue": self.venue,
+                "market_type": self.market_type,
+                "symbol": str(row["symbol"]).upper(),
+                "event_time_ms": int(row["closeTime"]) if "closeTime" in row else None,
+                "last_price": _decimal(row["lastPrice"], "lastPrice"),
+                "base_volume_24h": _decimal(row["volume"], "volume"),
+                "quote_volume_24h": _decimal(row["quoteVolume"], "quoteVolume"),
+                "trade_count_24h": int(row["count"]),
+                "price_change_percent_24h": _decimal(row["priceChangePercent"], "priceChangePercent"),
+            })
+        return result
+
     def klines(self, symbol: str, interval: str = "1m", *, limit: int = 500) -> list[FuturesCandle]:
         allowed = {"1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1M"}
         if interval not in allowed:
