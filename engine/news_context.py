@@ -61,12 +61,17 @@ def load_github_event(path):
         return None
 
 
+def is_relevant(context, symbol):
+    """Whether a scanned instrument is materially related to the event currency."""
+    if not isinstance(context, dict):
+        return False
+    currency = str(context.get("currency") or "").upper()
+    return currency in SYMBOL_CURRENCIES.get(symbol, set())
+
+
 def format_context(context, symbol):
     """Annotate only symbols materially related to the event currency."""
-    if not isinstance(context, dict):
-        return ""
-    currency = str(context.get("currency") or "").upper()
-    if currency not in SYMBOL_CURRENCIES.get(symbol, set()):
+    if not is_relevant(context, symbol):
         return ""
     parts = [f"📰 POST-NEWS CONTEXT (not a direction signal): {currency} · {context.get('event', 'release')}"]
     if context.get("actual"):
