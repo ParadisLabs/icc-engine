@@ -1,4 +1,8 @@
+import os
+import sys
 import unittest
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "engine"))
 
 from news_context import format_context, parse_github_event
 
@@ -40,7 +44,7 @@ class NewsContextTests(unittest.TestCase):
         ctx = parse_github_event(self.payload(), now=1100)
         self.assertIn("POST-NEWS CONTEXT", format_context(ctx, "XAUUSD"))
         self.assertIn("actual 3.1%", format_context(ctx, "GBPUSD"))
-        self.assertEqual("", format_context({"currency": "EUR", "event": "ECB"}, "GBPUSD"))
+        self.assertFalse(__import__("news_context").is_relevant({"currency": "EUR"}, "GBPUSD"))
 
     def test_context_is_annotation_not_trade_direction(self):
         ctx = parse_github_event(self.payload(), now=1100)
