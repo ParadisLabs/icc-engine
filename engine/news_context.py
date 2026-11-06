@@ -43,6 +43,7 @@ def parse_github_event(event, now=None):
         return {
             "kind": "guard", "currency": currency, "event": title[:160],
             "event_ts": event_ts, "block_until": event_ts + 90,
+            "key": f"{event_ts}:{title[:40]}",
         }
 
     if action != "icc.run" or payload.get("reason") != "post-news scan":
