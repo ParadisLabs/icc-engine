@@ -54,6 +54,7 @@ class NewsContextTests(unittest.TestCase):
         ctx = parse_github_event(event, now=1000)
         self.assertEqual(ctx["kind"], "guard")
         self.assertEqual(ctx["block_until"], 2090)
+        self.assertEqual(ctx["key"], "2000:Nonfarm Payrolls")
 
     def test_rejects_expired_pre_news_guard(self):
         event = {
