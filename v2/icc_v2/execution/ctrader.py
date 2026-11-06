@@ -8,6 +8,7 @@ No credentials are read from source files.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from urllib.parse import urlencode
 
 
@@ -27,6 +28,27 @@ class CTraderDemoConfig:
     access_token: str
     account_id: int
     environment: str = "demo"
+
+    @classmethod
+    def from_env(cls, environ=None) -> "CTraderDemoConfig":
+        """Load credentials only when explicitly requested; never at import time."""
+        env = os.environ if environ is None else environ
+        required = ("CTRADER_CLIENT_ID", "CTRADER_CLIENT_SECRET", "CTRADER_REDIRECT_URI", "CTRADER_ACCESS_TOKEN", "CTRADER_ACCOUNT_ID")
+        missing = [key for key in required if not env.get(key, "").strip()]
+        if missing:
+            raise CTraderConfigurationError("Missing environment variables: " + ", ".join(missing))
+        try:
+            account_id = int(env["CTRADER_ACCOUNT_ID"])
+        except (TypeError, ValueError) as exc:
+            raise CTraderConfigurationError("CTRADER_ACCOUNT_ID must be a positive integer") from exc
+        return cls(
+            client_id=env["CTRADER_CLIENT_ID"],
+            client_secret=env["CTRADER_CLIENT_SECRET"],
+            redirect_uri=env["CTRADER_REDIRECT_URI"],
+            access_token=env["CTRADER_ACCESS_TOKEN"],
+            account_id=account_id,
+            environment=env.get("CTRADER_ENVIRONMENT", "demo"),
+        )
 
     def __post_init__(self) -> None:
         for name in ("client_id", "client_secret", "redirect_uri", "access_token"):
