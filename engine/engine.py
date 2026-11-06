@@ -476,15 +476,15 @@ def consider_candidates(con, state, analyses):
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     if state.get("day") != today:
         state["day"], state["daily_r"] = today, 0.0
-    guard = state.get("news_guard")
-    if guard and time.time() < guard.get("block_until", 0):
-        print(f"[news] blackout active for {guard.get('currency')} {guard.get('event')}")
+    guards = state.get("news_guards", {})
+    active_guards = [g for g in guards.values() if time.time() < g.get("block_until", 0)]
+    if active_guards:
+        guard = max(active_guards, key=lambda g: g.get("block_until", 0))
+        print(f"[news] blackout active for {len(active_guards)} high-impact event(s)")
         if not guard.get("notice_sent"):
-            tg_send(f"📰 NEWS BLACKOUT — {guard['currency']} · {guard['event']}\nNew ICC entries paused until 90 seconds after the release. Existing positions continue to be managed.")
+            tg_send(f"📰 NEWS BLACKOUT — {guard['currency']} · {guard['event']}\nNew ICC entries paused until 90 seconds after this release. Existing positions continue to be managed.")
             guard["notice_sent"] = True
         return
-    if guard:
-        state.pop("news_guard", None)
     if time.time() < state.get("pause_until", 0):
         print("[risk] loss-streak pause active — no new alerts")
         if state.get("news_context"):
@@ -931,18 +931,20 @@ def main():
         old = state.pop("focus", None)
         state["focus_list"] = [old] if old else []
     news_event = news_context.load_github_event(os.environ.get("GITHUB_EVENT_PATH"))
+    guards = state.setdefault("news_guards", {})
     if news_event and news_event.get("kind") == "guard":
-        state["news_guard"] = news_event
+        guards[news_event["key"]] = news_event
         print(f"[news] pre-release blackout loaded: {news_event['currency']} {news_event['event']}")
     elif news_event and news_event.get("kind") == "post":
         state["news_context"] = news_event
-        state.pop("news_guard", None)
         print(f"[news] post-release context loaded: {news_event['currency']} {news_event['event']}")
     else:
         state.pop("news_context", None)
-    guard = state.get("news_guard")
-    if guard and time.time() >= guard.get("block_until", 0):
-        state.pop("news_guard", None)
+    now_s = int(time.time())
+    state["news_guards"] = {
+        key: guard for key, guard in guards.items()
+        if guard.get("block_until", 0) > now_s
+    }
     n = con.execute("SELECT COUNT(*) FROM memory").fetchone()[0]
     print(f"[icc] engine {config.CONFIG_VERSION} | memory rows: {n}")
     process_updates(con, state)
