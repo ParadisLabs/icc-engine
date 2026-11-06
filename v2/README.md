@@ -149,3 +149,24 @@ The liquidity shortlist now has separate Binance Spot and USD-M perpetual scanne
 A portfolio-level research simulator now admits candidate paths chronologically and enforces configurable per-trade risk, aggregate open-risk, maximum concurrent positions, UTC-day realized-loss and peak-to-equity drawdown limits. It applies the existing conservative per-trade OHLC simulator and reports realized equity and rejection reasons.
 
 This remains a simplified portfolio model. It does not yet model instrument-specific margin, funding, liquidation, partial fills, spread/market impact, cross-asset correlation, or intrabar mark-to-market portfolio risk. Do not use its results as a live risk engine.
+
+
+## Post-release FX shadow scanner
+
+The news-aware FX research layer is isolated from the legacy production engine:
+
+- `icc_v2.data.fx_universe` selects configured OANDA FX pairs containing the event currency. Pair selection is neutral; it does not infer direction from actual-versus-forecast values. The default list is a shortlist only—instrument availability must be verified in the user's OANDA practice environment.
+- `icc_v2.strategy.news_reaction` excludes the one-minute candle that overlaps the release, requires a pre-event range baseline and closed post-release candles, and measures observed displacement/range expansion. It rejects weak reactions and never predicts direction from the release number.
+- `icc_v2.strategy.news_scan.OandaNewsFxScanner` first fetches M1 data for a bounded set of relevant pairs. It fetches M15/H1/D candles only after a measurable reaction, then requires the existing ICC trend/sweep hypothesis and alignment with the observed price reaction.
+- OANDA `price_update_count` is intentionally not mapped to exchange volume. The existing core setup receives volume as unavailable for OANDA FX, avoiding false volume confluence.
+- The scanner requires an `OandaPracticeFx` adapter constructed with a practice token at runtime. The adapter remains hard-restricted to the OANDA practice host and candle endpoint. No token is committed, no account/order endpoints are called, and no execution path is added.
+
+The default post-release gate waits for at least three fully post-release one-minute bars, measures the first 3–15 bars against the prior 20 complete one-minute ranges, and requires a 0.50x baseline-range move plus 1.20x median-range expansion. A candidate must be 3–30 minutes after the release, align with the observed reaction, and pass the existing M15/H1/D trend/sweep logic. These are conservative research defaults to evaluate—not proven profitable thresholds.
+
+Run all V2 tests with:
+
+```bash
+PYTHONPATH=v2 python -m unittest discover -s v2/tests -v
+```
+
+This scanner is a read-only shadow research component. It does not place orders, change legacy ICC strategy/risk controls, bypass manual approval, or claim a positive edge.
