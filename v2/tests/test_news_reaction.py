@@ -65,6 +65,17 @@ class NewsReactionTests(unittest.TestCase):
         self.assertFalse(early.eligible)
         self.assertIn("TOO_EARLY_AFTER_RELEASE", early.reasons)
 
+    def test_excludes_the_minute_candle_that_overlaps_release(self):
+        event_time = 1_030_000  # 30 seconds after the minute boundary
+        event = NewsEvent(event_id="offset", currency="EUR", event_time_ms=event_time)
+        bars = bars_for_event(1_000_000)
+        # This candle starts before the release and closes after it; it must not
+        # be counted as either pre-event baseline or post-event reaction.
+        bars.insert(20, Bar(1_000_000, 1.1000, 1.1050, 1.0950, 1.1040))
+        reaction = assess_post_release_reaction(event, "EUR_USD", bars)
+        self.assertTrue(reaction.eligible)
+        self.assertEqual(reaction.post_release_bars, 3)
+
     def test_rejects_duplicate_or_out_of_order_bars(self):
         bad = bars_for_event()
         bad[-1] = bad[-2]
