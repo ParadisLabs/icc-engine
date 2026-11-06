@@ -20,9 +20,11 @@ SYMBOL_CURRENCIES = {
 
 def parse_github_event(event, now=None):
     """Return a fresh post-news payload, or None for unrelated/invalid events."""
-    if not isinstance(event, dict) or event.get("action") not in (None, ""):
+    if not isinstance(event, dict):
         return None
-    if event.get("event_type") not in (None, "icc.run"):
+    # GitHub repository_dispatch stores the event type in the "action" field.
+    action = event.get("action") or event.get("event_type")
+    if action not in (None, "icc.run"):
         return None
     payload = event.get("client_payload")
     if not isinstance(payload, dict) or payload.get("reason") != "post-news scan":
