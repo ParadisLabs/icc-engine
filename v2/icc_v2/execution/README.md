@@ -19,15 +19,20 @@ minimum/step sizes, market status, quotes, stop-distance rules and risk checks
 are verified should a separately reviewed demo-trading scope be considered.
 Never request or store a live-account token in this workflow.
 
-The future runtime configuration must be stored in GitHub Actions Secrets,
-not committed to the repository:
+`CTraderDemoConfig.from_env()` loads these values only when explicitly called;
+importing ICC never reads credentials. Store them in GitHub Actions Secrets or
+in the deployment's secret manager, not in the repository:
 - `CTRADER_CLIENT_ID`
 - `CTRADER_CLIENT_SECRET`
 - `CTRADER_REDIRECT_URI`
 - `CTRADER_ACCESS_TOKEN`
-- `CTRADER_ACCOUNT_ID`
+- `CTRADER_ACCOUNT_ID` (numeric cTrader demo account ID)
+- `CTRADER_ENVIRONMENT=demo` (optional; defaults to `demo`, rejects `live`)
 
-These are documentation for a later authorized connection; no secrets are
+`CTRADER_ACCESS_TOKEN` must be the OAuth access token returned after the user
+authorizes the cTrader demo account; it is not the client secret. No secrets are
 required or consumed by the current CI tests. The user must create a cTrader
 Open API application and explicitly authorize the demo account before any
-connection can occur.
+connection can occur. Order methods remain blocked even after credentials are
+provided until broker-specific metadata and the separate demo execution review
+are complete.
