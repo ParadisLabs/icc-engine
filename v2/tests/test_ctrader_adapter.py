@@ -23,6 +23,35 @@ def config(**overrides):
 
 
 class CTraderAdapterTests(unittest.TestCase):
+    def test_environment_loader_requires_all_credentials(self):
+        from icc_v2.execution.ctrader import CTraderConfigurationError
+        with self.assertRaises(CTraderConfigurationError):
+            CTraderDemoConfig.from_env({})
+
+    def test_environment_loader_defaults_to_demo(self):
+        values = {
+            "CTRADER_CLIENT_ID": "id",
+            "CTRADER_CLIENT_SECRET": "secret",
+            "CTRADER_REDIRECT_URI": "https://example.invalid/callback",
+            "CTRADER_ACCESS_TOKEN": "token",
+            "CTRADER_ACCOUNT_ID": "123456",
+        }
+        loaded = CTraderDemoConfig.from_env(values)
+        self.assertEqual(loaded.environment, "demo")
+        self.assertEqual(loaded.account_id, 123456)
+
+    def test_environment_loader_rejects_live_environment(self):
+        values = {
+            "CTRADER_CLIENT_ID": "id",
+            "CTRADER_CLIENT_SECRET": "secret",
+            "CTRADER_REDIRECT_URI": "https://example.invalid/callback",
+            "CTRADER_ACCESS_TOKEN": "token",
+            "CTRADER_ACCOUNT_ID": "123456",
+            "CTRADER_ENVIRONMENT": "live",
+        }
+        with self.assertRaises(CTraderConfigurationError):
+            CTraderDemoConfig.from_env(values)
+
     def test_demo_config_accepted(self):
         self.assertEqual(CTraderDemoAdapter(config()).environment, "demo")
 
