@@ -22,7 +22,9 @@ def main():
     if not raw: raise SystemExit("ICC_NEWS_EVENT_JSON is required")
     if not token: raise SystemExit("OANDA_PRACTICE_TOKEN is required for the read-only practice data adapter")
     payload = json.loads(raw)
-    event = NewsEvent(**payload)
+    allowed = {"event_id", "currency", "event_time_ms", "impact", "title", "actual", "forecast", "previous"}
+    event_payload = {key: value for key, value in payload.items() if key in allowed}
+    event = NewsEvent(**event_payload)
     scanner = OandaNewsFxScanner(OandaPracticeFx(token))
     results = scanner.scan_event(event)
     print(json.dumps({"mode":"shadow_only","event":plain(event),"results":plain(results)},sort_keys=True))
