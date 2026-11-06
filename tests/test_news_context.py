@@ -40,6 +40,33 @@ class NewsContextTests(unittest.TestCase):
         self.assertIsNone(parse_github_event(self.payload(), now=1000 + 2701))
         self.assertIsNone(parse_github_event(self.payload(), now=1000 - 121))
 
+
+    def test_accepts_pre_news_guard_up_to_45_minutes_before_release(self):
+        event = {
+            "action": "icc.news_guard",
+            "client_payload": {
+                "reason": "pre-news guard",
+                "currency": "USD",
+                "event": "Nonfarm Payrolls",
+                "event_ts": 2000,
+            },
+        }
+        ctx = parse_github_event(event, now=1000)
+        self.assertEqual(ctx["kind"], "guard")
+        self.assertEqual(ctx["block_until"], 2090)
+
+    def test_rejects_expired_pre_news_guard(self):
+        event = {
+            "action": "icc.news_guard",
+            "client_payload": {
+                "reason": "pre-news guard",
+                "currency": "USD",
+                "event": "Nonfarm Payrolls",
+                "event_ts": 1000,
+            },
+        }
+        self.assertIsNone(parse_github_event(event, now=1121))
+
     def test_context_only_attaches_to_relevant_symbols(self):
         ctx = parse_github_event(self.payload(), now=1100)
         self.assertIn("POST-NEWS CONTEXT", format_context(ctx, "XAUUSD"))
