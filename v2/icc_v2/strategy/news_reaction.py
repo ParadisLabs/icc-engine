@@ -8,6 +8,7 @@ approval outside this research package.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import isfinite
 from statistics import median
 from typing import Sequence
 
@@ -89,8 +90,12 @@ def assess_post_release_reaction(
     timestamps = [bar.timestamp_ms for bar in ordered]
     if timestamps != sorted(set(timestamps)):
         raise ValueError("one-minute bars must be strictly chronological and unique")
-    if any(bar.high < max(bar.open, bar.close, bar.low) or
-           bar.low > min(bar.open, bar.close, bar.high) for bar in ordered):
+    if any(
+        not all(isfinite(value) and value > 0 for value in (bar.open, bar.high, bar.low, bar.close))
+        or bar.high < max(bar.open, bar.close, bar.low)
+        or bar.low > min(bar.open, bar.close, bar.high)
+        for bar in ordered
+    ):
         raise ValueError("invalid OHLC bar")
 
     minute_ms = 60_000
