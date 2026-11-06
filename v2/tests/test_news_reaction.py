@@ -66,7 +66,7 @@ class NewsReactionTests(unittest.TestCase):
         self.assertIn("TOO_EARLY_AFTER_RELEASE", early.reasons)
 
     def test_excludes_the_minute_candle_that_overlaps_release(self):
-        event_time = 100_030_000  # 30 seconds after the candle's open
+        event_time = 100_050_000  # 30 seconds after the candle's open
         event = NewsEvent(event_id="offset", currency="EUR", event_time_ms=event_time)
         bars = []
         for i in range(20):
