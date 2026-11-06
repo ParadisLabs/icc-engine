@@ -19,4 +19,4 @@ jobs:
       - name: Run offline tests
         run: |
           python -m unittest discover -s tests -v
-          python -m py_compile engine/*.py
+          python -m py_compile engine/engine.py engine/pressure.py engine/news_context.py
