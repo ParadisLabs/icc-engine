@@ -73,6 +73,7 @@ def format_context(context, symbol):
     """Annotate only symbols materially related to the event currency."""
     if not is_relevant(context, symbol):
         return ""
+    currency = str(context.get("currency") or "").upper()
     parts = [f"📰 POST-NEWS CONTEXT (not a direction signal): {currency} · {context.get('event', 'release')}"]
     if context.get("actual"):
         parts.append(f"actual {context['actual']}")
