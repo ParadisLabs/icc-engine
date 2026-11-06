@@ -488,10 +488,12 @@ def consider_candidates(con, state, analyses):
             mem = match_memory(con, an["candidate"])
             an["candidate"]["tp"] = mem["tp"]
             cands.append((an["candidate"], mem))
+    ctx = state.get("news_context")
+    if ctx:
+        cands = [cm for cm in cands if news_context.is_relevant(ctx, cm[0]["symbol"])]
     if not cands:
-        ctx = state.get("news_context")
         if ctx:
-            tg_send(f"📰 POST-NEWS CHECK — {ctx['currency']} · {ctx['event']}\nNo qualifying ICC technical setup was confirmed on this scan. No trade was triggered; the engine will wait for its normal structure, memory and risk conditions.")
+            tg_send(f"📰 POST-NEWS CHECK — {ctx['currency']} · {ctx['event']}\nNo relevant instrument produced a qualifying ICC technical setup on this scan. No trade was triggered; the engine will wait for its normal structure, memory and risk conditions.")
         return
     focus_list = state.get("focus_list", [])
     ranked = sorted(cands, key=lambda cm: (cm[1]["exp"] if cm[1]["count"] > 0 else -9.0, cm[0]["quality"]), reverse=True)
