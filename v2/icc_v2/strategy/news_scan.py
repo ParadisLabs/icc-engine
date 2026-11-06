@@ -7,7 +7,7 @@ the existing ICC trend/sweep hypothesis. It emits research decisions, never orde
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Sequence
+from typing import Sequence
 
 from ..data.fx_universe import DEFAULT_FX_INSTRUMENTS, event_relevant_instruments, validate_fx_universe
 from ..data.oanda_fx import OandaPracticeFx, OandaFxCandle
