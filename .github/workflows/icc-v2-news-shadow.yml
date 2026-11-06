@@ -1,0 +1,43 @@
+name: ICC V2 News Shadow Scan
+on:
+  workflow_dispatch:
+    inputs:
+      event_json:
+        description: "JSON: event_id, currency, event_time_ms, impact, title, actual, forecast, previous"
+        required: true
+        type: string
+  repository_dispatch:
+    types: [icc.news.shadow]
+permissions:
+  contents: read
+jobs:
+  shadow-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate event payload and run read-only shadow scan
+        env:
+          OANDA_PRACTICE_TOKEN: ${{ secrets.OANDA_PRACTICE_TOKEN }}
+          MANUAL_EVENT_JSON: ${{ inputs.event_json }}
+          DISPATCH_EVENT_JSON: ${{ toJson(github.event.client_payload) }}
+        run: |
+          if [ -n "$MANUAL_EVENT_JSON" ]; then
+            echo "$MANUAL_EVENT_JSON" > /tmp/icc_event.json
+          else
+            echo "$DISPATCH_EVENT_JSON" > /tmp/icc_event.json
+          fi
+          python - <<'PY'
+          import json, os
+          with open("/tmp/icc_event.json", encoding="utf-8") as f:
+              payload = json.load(f)
+          required = {"event_id", "currency", "event_time_ms"}
+          missing = required - payload.keys()
+          if missing:
+              raise SystemExit("Missing event fields: " + ", ".join(sorted(missing)))
+          os.environ["ICC_NEWS_EVENT_JSON"] = json.dumps(payload)
+          os.execvpe("python", ["python", "v2/run_news_shadow.py"], os.environ)
+          PY
