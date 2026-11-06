@@ -102,7 +102,8 @@ def assess_post_release_reaction(
     # Exclude the candle containing the release from both baseline and reaction:
     # it mixes pre- and post-event prices and would bias the measured impulse.
     pre = [bar for bar in ordered if bar.timestamp_ms + minute_ms <= event.event_time_ms]
-    post = [bar for bar in ordered if bar.timestamp_ms >= event.event_time_ms + minute_ms]
+    first_full_post_minute = ((event.event_time_ms + minute_ms - 1) // minute_ms) * minute_ms
+    post = [bar for bar in ordered if bar.timestamp_ms >= first_full_post_minute]
     reasons: list[str] = []
     if len(pre) < 20:
         reasons.append("INSUFFICIENT_PRE_EVENT_BASELINE")
