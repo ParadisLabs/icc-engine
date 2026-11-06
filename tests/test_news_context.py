@@ -15,7 +15,7 @@ class NewsContextTests(unittest.TestCase):
             "previous": "2.9%",
         }
         p.update(overrides)
-        return {"event_type": "icc.run", "client_payload": p}
+        return {"action": "icc.run", "client_payload": p}
 
     def test_accepts_fresh_post_news_event(self):
         ctx = parse_github_event(self.payload(), now=1100)
@@ -40,7 +40,7 @@ class NewsContextTests(unittest.TestCase):
         ctx = parse_github_event(self.payload(), now=1100)
         self.assertIn("POST-NEWS CONTEXT", format_context(ctx, "XAUUSD"))
         self.assertIn("actual 3.1%", format_context(ctx, "GBPUSD"))
-        self.assertEqual("", format_context(ctx, "GBPUSD") if ctx["currency"] == "EUR" else format_context({"currency":"EUR","event":"ECB"}, "GBPUSD"))
+        self.assertEqual("", format_context({"currency": "EUR", "event": "ECB"}, "GBPUSD"))
 
     def test_context_is_annotation_not_trade_direction(self):
         ctx = parse_github_event(self.payload(), now=1100)
