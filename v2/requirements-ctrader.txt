@@ -1,0 +1,2 @@
+# Optional broker adapter dependency; official Spotware Python SDK (MIT).
+ctrader-open-api==0.9.3
