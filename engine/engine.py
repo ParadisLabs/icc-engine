@@ -478,9 +478,15 @@ def consider_candidates(con, state, analyses):
         state["day"], state["daily_r"] = today, 0.0
     if time.time() < state.get("pause_until", 0):
         print("[risk] loss-streak pause active — no new alerts")
+        if state.get("news_context"):
+            ctx = state["news_context"]
+            tg_send(f"📰 POST-NEWS CHECK — {ctx['currency']} · {ctx['event']}\nNo trade: ICC loss-streak pause is active. Risk protection was not bypassed.")
         return
     if state.get("daily_r", 0.0) <= config.DAILY_LOSS_R:
         print("[risk] daily loss limit hit — no new alerts today")
+        if state.get("news_context"):
+            ctx = state["news_context"]
+            tg_send(f"📰 POST-NEWS CHECK — {ctx['currency']} · {ctx['event']}\nNo trade: ICC daily loss limit is active. Risk protection was not bypassed.")
         return
     cands = []
     for sym, an in analyses.items():
@@ -500,6 +506,10 @@ def consider_candidates(con, state, analyses):
     cand, mem = ranked[0]
     key = f"{cand['symbol']}|{cand['direction']}"
     if time.time() < state.get("cooldowns", {}).get(key, 0):
+        if state.get("news_context"):
+            ctx = state["news_context"]
+            direction = "BUY" if cand["direction"] == 1 else "SELL"
+            tg_send(f"📰 POST-NEWS CHECK — {ctx['currency']} · {ctx['event']}\n{cand['symbol']} {direction} was suppressed by its existing setup cooldown. No duplicate trade alert.")
         return
     decision, reason, edge = decide(cand, mem)
     # VIX stress gate: rescue-tier entries are blocked when volatility says risk-off
@@ -519,6 +529,9 @@ def consider_candidates(con, state, analyses):
             state.setdefault("cooldowns", {})[key] = time.time() + config.COOLDOWN_H * 3600
             return
         if decision != 3:
+            if state.get("news_context"):
+                ctx = state["news_context"]
+                tg_send(f"📰 POST-NEWS CHECK — {ctx['currency']} · {ctx['event']}\nA relevant candidate was found, but it did not qualify for an A+ action while another focus trade is open. Existing trade management takes priority.")
             return
     if decision == 3:
         rp = dict(cand)
