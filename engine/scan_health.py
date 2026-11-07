@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 
-SUMMARY = re.compile(r"\\[icc\\] analysed (\\d+)/(\\d+) symbols")
+SUMMARY = re.compile(r"\[icc\] analysed (\d+)/(\d+) symbols")
 
 
 def analysed_counts(text):
