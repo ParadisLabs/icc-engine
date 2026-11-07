@@ -25,7 +25,9 @@ jobs:
           python-version: "3.11"
 
       - name: Main engine scan
-        run: python engine/engine.py
+        run: |
+          set -o pipefail
+          python engine/engine.py 2>&1 | tee main_scan.log
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -44,6 +46,27 @@ jobs:
         env:
           HUB_URL: ${{ secrets.HUB_URL }}
           HUB_WEBHOOK_SECRET: ${{ secrets.HUB_WEBHOOK_SECRET }}
+
+      - name: Fail workflow when no symbols were analysed
+        if: always()
+        run: |
+          python - <<'PY'
+          import pathlib, re, sys
+          log = pathlib.Path('main_scan.log')
+          if not log.exists():
+              print('ICC health gate: main scan log is missing')
+              sys.exit(1)
+          text = log.read_text(errors='replace')
+          match = re.search(r'\\[icc\\] analysed (\\d+)/(\\d+) symbols', text)
+          if not match:
+              print('ICC health gate: could not find the analysed-symbol summary')
+              sys.exit(1)
+          analysed, total = map(int, match.groups())
+          print(f'ICC health gate: analysed {analysed}/{total} symbols')
+          if analysed == 0:
+              print('ICC health gate: FAIL — no symbols received usable market data')
+              sys.exit(1)
+          PY
 
       - name: Commit memory
         run: |
