@@ -57,7 +57,7 @@ jobs:
               print('ICC health gate: main scan log is missing')
               sys.exit(1)
           text = log.read_text(errors='replace')
-          match = re.search(r'\\[icc\\] analysed (\\d+)/(\\d+) symbols', text)
+          match = re.search(r'\[icc\] analysed (\d+)/(\d+) symbols', text)
           if not match:
               print('ICC health gate: could not find the analysed-symbol summary')
               sys.exit(1)
