@@ -1,6 +1,8 @@
 name: ICC Engine Scan
 
 on:
+  pull_request:
+    branches: [main]
   schedule:
     - cron: "*/10 * * * *"
   workflow_dispatch:
@@ -12,7 +14,19 @@ permissions:
   contents: write
 
 jobs:
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile and test scan health gate
+        run: python -m py_compile engine/scan_health.py engine/engine.py engine/pressure.py engine/hub_sync.py tests/test_scan_health.py && python -m unittest discover -s tests -v
+
   scan:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -25,7 +39,9 @@ jobs:
           python-version: "3.11"
 
       - name: Main engine scan
-        run: python engine/engine.py
+        run: |
+          set -o pipefail
+          python engine/engine.py 2>&1 | tee main_scan.log
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -44,6 +60,10 @@ jobs:
         env:
           HUB_URL: ${{ secrets.HUB_URL }}
           HUB_WEBHOOK_SECRET: ${{ secrets.HUB_WEBHOOK_SECRET }}
+
+      - name: Fail workflow when no symbols were analysed
+        if: always()
+        run: python engine/scan_health.py main_scan.log
 
       - name: Commit memory
         run: |
