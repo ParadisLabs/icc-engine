@@ -12,7 +12,7 @@ import time
 import urllib.request
 
 DB_PATH = os.path.join("data", "memory.db")
-HUB_URL = os.environ.get("HUB_URL", "").rstrip("/")
+HUB_URL = os.environ.get("HUB_URL", "https://site-383ef7b599e542209e6a7c00f9ab7638.freebuff.page").rstrip("/")
 SECRET = os.environ.get("HUB_WEBHOOK_SECRET", "")
 
 try:
