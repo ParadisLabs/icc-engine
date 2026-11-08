@@ -26,7 +26,8 @@ jobs:
         run: python -m py_compile engine/scan_health.py engine/engine.py engine/pressure.py engine/hub_sync.py tests/test_scan_health.py && python -m unittest discover -s tests -v
 
   scan:
-    if: github.event_name != 'pull_request'
+    # Safety hold: scans remain disabled until explicit operator enablement.
+    if: github.event_name != 'pull_request' && vars.ICC_SCAN_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
